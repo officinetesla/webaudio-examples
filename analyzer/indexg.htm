@@ -1,0 +1,212 @@
+
+
+<!DOCTYPE html>
+<html><head><title>MATBOG</title>
+<script src="ooo.js"></script>
+<script src="ffts/brookfft.js"></script>
+	
+	<script src="ffts/fft-asm.js"></script>
+<script src="ffts/fft-asm-noasm.js"></script>
+<script src="ffts/fft-asm-lib.js"></script>
+<script>
+function buttloader(elm,nm,url){elm.innerHTML='loading '+nm+'...';elm.setAttribute('disabled','disabled');var request=new XMLHttpRequest();request.open('GET',url, true);request.responseType='arraybuffer';
+        request.onload=function(){var audioData=request.response;audioCtx.decodeAudioData(audioData,function(buffer){elm.innerHTML='PLAY '+nm;elm.removeAttribute('disabled');elm.onclick=function(){execplay(buffer);};},function(e){"Error with decoding audio data" + e.err});}
+        request.send();}
+function nativeframe(aevt){var inBuff=aevt.inputBuffer;var outBuff=aevt.outputBuffer;
+        for(var chs=0;chs<outBuff.numberOfChannels;chs++){var bin=inBuff.getChannelData(chs);var out=outBuff.getChannelData(chs);
+          for(var s=0;s<bin.length;s++){if(micing){out[s]=0}else{out[s]=bin[s];}}}
+						 		var d1=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(d1);
+        var d2=new Uint8Array(FFTSIZE/2);analyser.getByteTimeDomainData(d2);
+								update(d1,d2);}
+function brookframe(aevt){var inBuff=aevt.inputBuffer;var outBuff=aevt.outputBuffer;
+        for(var chs=0;chs<outBuff.numberOfChannels;chs++){var bin=inBuff.getChannelData(chs);var out=outBuff.getChannelData(chs);
+			jbrookFFT.forward(bin);jbrookFFT.calculateSpectrum();var d1=jbrookFFT.spectrum;var d2=[];
+			for(var s=0;s<bin.length;s++){d1[s]=Math.floor(d1[s]*BUFFERSIZE/2);
+				if(micing){out[s]=0}else{out[s]=bin[s];}
+				var fff=Math.floor(s/2);d2[fff]+=bin[s];
+				if(s%2==0){if(s>0){d2[fff]=Math.floor(((d2[fff]/2)+1)*128);d2[fff+1]=0}}
+			}}       
+		update(d1,d2);}
+function fftasmframe(aevt){var inBuff=aevt.inputBuffer;var outBuff=aevt.outputBuffer;
+        for(var chs=0;chs<outBuff.numberOfChannels;chs++){var bin=inBuff.getChannelData(chs);var out=outBuff.getChannelData(chs);
+									 var d1=new Float32Array(BUFFERSIZE/(BUFFERSIZE/FFTSIZE));var d2=[];var d3=new Float32Array(BUFFERSIZE/(BUFFERSIZE/FFTSIZE));var sz=(BUFFERSIZE/FFTSIZE);var fff;
+          for(var s=0;s<bin.length;s++){d2[s]=0;
+			if(micing){out[s]=0}else{out[s]=bin[s];}
+			fff=Math.floor(s/sz);d2[fff]+=bin[s];
+			if(s%sz==0){if(s>0){d2[fff]=d2[fff]/sz;d1[fff]=d2[fff];d3[fff]=0;d2[fff+1]=0}}
+		}}d1[0]=1;
+		fftasm.fft(d1,d3);var d4=[];
+		for(var s=0;s<d1.length;s++){			
+			d3[s]=(Math.floor((d3[s]+1)*256));
+			d2[s]=(Math.floor((d2[s]+1)*128));
+			}
+update(d3,d2);}
+//----------------------CANVASUPDATE-----------------------------------------------------------------------------------------------------//
+function update(d1,d2){
+		var cc1,cc2;var xxx=797;var d='';var tempo=0;
+		var wid=d1.length/((d1.length*(d1.length/128))/100);var hei=d1.length/((d1.length*(d1.length/128))/100);
+		var corx=0;var cory=0;var memoria=wid;var corx2=1600;var cory2=0;var corx3=800;var cory3=400;var corx4=0;cory5=700;
+		var cn=document.getElementById("canvas2");var cnt=cn.getContext("2d");var cn3=document.getElementById("canvas3");
+		var cnt3=cn3.getContext("2d");var cn4=document.getElementById("canvas4");var cnt4=cn4.getContext("2d");
+		//Update GRAPH 1(canvas)
+		var avg=getAverageVolume(d1);max=Math.max.apply(Math,d1);coord=Math.min(avg*2,255);coord=Math.round((max+coord)/2);
+        ctx.fillRect(fftnum,255-coord,1,255);loggedcoords[fftnum]=coord;	cnt.clearRect(0,0,2400,800);
+		for(var s=0;s<d1.length;s++){
+		  cc1=Math.floor(d1[s]);cc1='rgb('+cc1+','+cc1+','+cc1+')';cc2=Math.floor(d2[s]);cc2='rgb('+cc2+','+cc2+','+cc2+')';
+		  cnt3.fillStyle=cc1;cnt3.fillRect(corx4,0,800/d1.length,100);cnt4.fillStyle=cc2;cnt4.fillRect(corx4,0,800/d1.length,100);
+		  cnt.fillStyle=cc2;cnt.fillRect(corx,cory,wid,hei);cnt.fillStyle=cc1;cnt.fillRect(corx2,cory2,wid,hei);cnt.fillStyle="#000000";
+		  cnt.beginPath();
+		  //cnt.moveTo(800,400);
+		  //cnt.bezierCurveTo(2,100,200,100,1600,400);
+          //cnt.stroke();
+		  cnt.fillRect(corx3,(cory3+(0-d2[s]))+125,800/d1.length,10);cnt.fillRect(corx3,(cory5+(0-d1[s])),800/d1.length,10);
+		  if(memoria>=800){cory=cory+hei;corx=0;}else{corx=corx+wid;};
+		  if(memoria>=800){cory2=cory2+hei;corx2=1600;memoria=0;}else{corx2=corx2+wid;};memoria=memoria+wid;
+		  corx3=corx3+(800/d1.length);corx4=corx4+(800/d1.length);
+//---------------------------------------------------------------------------------------------------------------------------------------//
+		  //GENERATE SVG PATH
+		  var top=((128-d2[s])+127);
+		  if(xxx%797===0){d+='M '+tempo+' '+top+' ';}else if(xxx%797!==0){d+='L '+tempo+' '+top+' ';};
+		  xxx+=0.0001;tempo=tempo+10;}
+		//Update MIC
+		if(ooo.$$('checkaudio').checked==true){audigain.gain.value=0.9;}else{audigain.gain.value=0.0;}
+		//Update SVGs
+		document.getElementById('onda').setAttribute('d',d);
+		 var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			svg.setAttribute('style', 'display:none; position:absolute;top:155%; left:0%; width:100%; height:30%; background:#fff;');
+			svg.setAttribute('viewBox','0 0 '+FFTSIZE*5+' 255');
+			svg.setAttribute('id','slide'+fftnum);
+			ooo.$$('slider').setAttribute('max',fftnum);
+			svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+			var newElement = document.createElementNS("http://www.w3.org/2000/svg", 'path'); //Create a path in SVG's namespace
+			newElement.setAttribute('d',document.getElementById('onda').getAttribute('d')); //Set path's data
+			svg.appendChild(newElement);
+			document.body.appendChild(svg);
+		  document.getElementById('svgg').setAttribute('viewBox','0 0 '+FFTSIZE*5+' 255');
+		  
+		//If necessary enlarge canvas
+		if(fftnum>canvas.width){canvas.width=fftnum+(canvas.width/3);redraw(fftnum);}
+		//Care for node audio.js
+		if(ws){var msg1='';for(var s=0;s<data.length;s++){msg1+=data[s]+',';msg2+=data2[s]+',';msg3+=((20050/64)*(s+0.5))+',';}
+			ws.send('{"fftdata":['+msg.substring(0,msg.length-1)+'],"timedom":['+msg2.substring(0,msg2.length-1)+'],"frqcmd":['+msg3.substring(0,msg3.length-1)+']}');}
+		fftnum++;
+}
+window.lastsl=0;
+function slideGraph(v){
+				var sl=ooo.$$('slide'+v);
+				if(sl){ooo.$$('slide'+lastsl).style.display='none';
+				sl.style.display='';
+				lastsl=v;
+				}
+}
+</script>
+  <style>
+  html{overflow-x:hidden;}
+  body{overflow:hidden;}
+  .led{display:block;background-color:#000000;}.le{}
+  #grafrqCL{width:100%;height:5%;}
+  #grafrqCL .led{height:100%;width:1.5%;background-color:#000000;float:left;}
+  #grafrqCQ{width:32%;height:90%;float:left;}
+  #grafrqCQ .sep{width:100%;float:left;margin-top:1px;clear:left;display:block;}
+  #grafrqCQ .led{height:100%;width:1.5%;background-color:#000000;float:left;}
+  #graLL {float:left;width:32%;height:80%;}
+  #gratdomL {width:100%;height:5%;margin-top:32%;}
+  #gratdomL .le{height:100%;float:left;position:relative;background-color:#000000;}
+  #gratfrqL {width:100%;height:5%;margin-top:28%;}
+  #gratfrqL .le{height:100%;float:left;position:relative;background-color:#000000;}
+  #gratdomCQ{width:32%;height:90%;float:left;}
+  #gratdomCQ .sep{width:100%;float:left;margin-top:1px;clear:left;display:block;}
+  #gratdomCQ .led{height:100%;width:1.5%;background-color:#000000;float:left;}
+  #gratdomCL{width:100%;height:5%;float:left;clear:left;margin-top:1%;}
+  #gratdomCL .led{height:100%;width:1.5%;background-color:#000000;float:left;}
+  #graphs{width:100%;height:50%;}
+  #svgg {position:absolute;top:120%; left:0%; width:100%; height:30%; background:#fff;}
+  svg{display:block;}
+  </style>
+  </head><body>
+    <textarea style="width:100%;height:15%;" id="code">
+window.FFTSIZE=128;     //<------------- FARE TEST CON VALORI DIVERSI da 32 a 2048 (numero di sliders=fftSize/2 in mono)-(bottoni su un launchpad=64)
+window.BUFFERSIZE=1024; //<------------- FARE TEST CON VALORI DIVERSI 44100=1s - Viene enerato un frame FFT ogni buffersize.
+window.SMOOTHINGTIME=0; //<------------- FARE TEST ???????????
+    </textarea><br/><input id="checkaudio" type="checkbox" name="Output" value="Audio" checked="checked">Audio Output<br>
+	<select id="fft-chooser"><option value="native" selected="selected">native - webaudio</option><option value="brook">Corban Brook</option><option value="asm">fftasm</option></select>
+    <button id="buttA">load A</button><button id="buttB">load B</button><button id="buttC">load C</button><button id="buttW">load W</button><button id="buttLOG">load LOGARITMIC</button>
+	<button id="buttLIN">load LINEAR</button><button id="buttOM">load OM</button><button id="buttARIA">load ARIA</button>
+	<button id="buttP" style="display:none">PLAYLOG</button><br/><button id="buttM">USE MIC</button><br/>
+    <canvas id="canvas1" style="width:100%;height:256px;zoom:0.5" width="600"></canvas>
+	<canvas id="canvas3" style="width:100%;height:64px;zoom:0.5" width="800" height="100"></canvas>
+	<canvas id="canvas2" style="width:100%;height:800px;zoom:0.5" width="2400" height="800"></canvas>
+	<canvas id="canvas4" style="width:100%;height:64px;zoom:0.5" width="800" height="100"></canvas>
+    <div id="graphs"><div id="grafrqCL"> </div><div id="grafrqCQ"> </div><div id="graLL"> <div id="gratdomL"> </div><div id="gratfrqL"> </div></div><div id="gratdomCQ"> </div><div id="gratdomCL"> </div></div>
+	<svg id="svgg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10000 255">
+ <path id="onda" />
+  </svg>
+  <input id="slider" type="range" value="0" min="0" max="10" step="1" style="left:0;width:100%;top:150%;position:absolute" onchange="slideGraph(this.value)"></input>
+  <script>
+      var audioCtx=new AudioContext();var analyser;var splitter;var scriptNode;var fftnum=0;var source;var micing=false;var miming=false;var loggedcoords=[];
+      var fftlog=[];var fftlogT=[];
+      var myBufferA=null;var myBufferB=null;var myBufferC=null;var myBufferW=null;
+      var canvas=document.getElementsByTagName('canvas')[0];var ctx=canvas.getContext("2d");ctx.fillStyle="#000000";
+function getAverageVolume(array){var values=0;var avg;var length=array.length;for(var k=0;k<length;k++){values+=array[k];}avg=values/length;return avg;}
+function enablebuttons(enabled){var bb=document.getElementsByTagName('button');if(enabled){for(var b=0;b<bb.length-1;b++){bb[b].removeAttribute('disabled');}}else{for(var b=0;b<bb.length-1;b++){bb[b].setAttribute('disabled','disabled');}}}
+function execplay(buffer){fftlog=[];fftlogT=[];source=audioCtx.createBufferSource();source.buffer=buffer;var code=document.getElementById('code').value;try{eval(code);startplay();}catch(ex){alert(ex.message);}}
+function startplay(){
+  //Ripulisco la finestra
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    scriptNode=audioCtx.createScriptProcessor(BUFFERSIZE,1,1);
+	   splitter=audioCtx.createChannelSplitter();
+    window.audigain=audioCtx.createGain();audigain.gain.value=0.5;audigain.connect(audioCtx.destination);
+    var sl=document.getElementById("fft-chooser");
+	   sl=sl.options[sl.selectedIndex].value;
+	   if(sl=='brook'){jbrookFFT=new brookFFT(BUFFERSIZE,44100);scriptNode.onaudioprocess=brookframe;
+	   //rebuildgraphs(BUFFERSIZE/2);
+																			splitter.connect(scriptNode,0,0);}else if(sl=='asm'){window.fftasm=new FftModule(FFTSIZE,false);
+																							//window.fftasm=new FftModule(2048,true);
+					scriptNode.onaudioprocess=fftasmframe;
+																				//rebuildgraphs(BUFFERSIZE/(BUFFERSIZE/FFTSIZE)/2);
+																			splitter.connect(scriptNode,0,0);}
+	   else{scriptNode.onaudioprocess=nativeframe;
+	   //rebuildgraphs(FFTSIZE/2);
+					analyser=audioCtx.createAnalyser();analyser.smoothingTimeConstant=SMOOTHINGTIME;analyser.fftSize=FFTSIZE;
+					splitter.connect(analyser,0,0);analyser.connect(scriptNode);
+				}
+    scriptNode.connect(audigain);source.connect(splitter);
+    source.onended=function(){scriptNode.disconnect(audioCtx.destination);source.disconnect(splitter);splitter.disconnect(analyser);analyser.disconnect(scriptNode);enablebuttons(true)};
+    fftnum=0;loggedcoords=[];canvas.width=600;ctx=canvas.getContext("2d");ctx.fillStyle="#000000";enablebuttons(false);
+    if(source.start){source.start();}
+}
+function redraw(max){ctx=canvas.getContext("2d");ctx.fillStyle="#000000";for(var l=0;l<max;l++){ctx.fillRect(l,255-loggedcoords[l],1,255);}}
+//Load buttons
+ooo.$$('buttA').onclick=function(){buttloader(this,'A','a.mp3');};ooo.$$('buttB').onclick=function(){buttloader(this,'B','b.mp3');}
+ooo.$$('buttC').onclick=function(){buttloader(this,'C','c.mp3');};ooo.$$('buttW').onclick=function(){buttloader(this,'W','w.wav');}
+ooo.$$('buttLOG').onclick=function(){buttloader(this,'LOG','log.wav');};ooo.$$('buttLIN').onclick=function(){buttloader(this,'LIN','lin.wav');}
+ooo.$$('buttOM').onclick=function(){buttloader(this,'OM','om.mp3');};ooo.$$('buttARIA').onclick=function(){buttloader(this,'ARIA','aria.mp3');}
+playButtonM=document.getElementById('buttM');
+playButtonM.onclick=function(){
+  if(playButtonM.innerHTML=='USE MIC'){playButtonM.innerHTML='STOP MIC';micing=true;
+    navigator.webkitGetUserMedia({video:false,audio:true},function(stream){source=audioCtx.createMediaStreamSource(stream);
+    var code=document.getElementById('code').value;try{eval(code);startplay();}catch(ex){alert(ex.message);}},function(){var i=0;});
+  }else{micing=false;playButtonM.innerHTML='USE MIC';
+    scriptNode.disconnect(audioCtx.destination);source.disconnect(splitter);splitter.disconnect(analyser);analyser.disconnect(scriptNode);
+    enablebuttons(true);
+  }}
+playButtonP=document.getElementById('buttP');
+playButtonP.onclick=function(){
+  if(playButtonP.innerHTML=='PLAYLOG'){playButtonP.innerHTML='STOPLOG';miming=true;
+    source = audioCtx.createOscillator();
+    var wave = audioCtx.createPeriodicWave(fftlog[0],new Float32Array(64));
+    source.setPeriodicWave(wave);
+    var code=document.getElementById('code').value;
+			//try{
+				eval(code);startplay();
+				//}catch(ex){alert(ex.message);}
+		}
+  else{miming=false;playButton.innerHTML='PLAY LOG';
+    scriptNode.disconnect(audioCtx.destination);source.disconnect(splitter);splitter.disconnect(analyser);analyser.disconnect(scriptNode);
+    enablebuttons(true);
+  }}
+//connect to node audio.js
+if("WebSocket" in window){var ws=new WebSocket("ws://localhost:5000");ws.onclose=function(){console.log('Connection closer');ws=null};}else{console.log("WebSocket NOT supported by your Browser!");}
+    </script></body>
+  </html>
+  

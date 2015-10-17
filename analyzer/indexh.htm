@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html><head><title>VOICE ALTER</title>
+<script src="ooo.js"></script>
+<script src="ffts/fft-asm.js"></script><script src="ffts/fft-asm-noasm.js"></script><script src="ffts/fft-asm-lib.js"></script>
+<script>
+function buttloader(elm,nm,url){elm.innerHTML='loading '+nm+'...';elm.setAttribute('disabled','disabled');var request=new XMLHttpRequest();request.open('GET',url, true);request.responseType='arraybuffer';
+        request.onload=function(){var audioData=request.response;acx.decodeAudioData(audioData,function(buffer){window.selectedbuffer=buffer;elm.innerHTML='SELECTED '+nm;voiceB.removeAttribute('disabled');},function(e){"Error with decoding audio data" + e.err});}
+        request.send();}
+function processmic(aevt){
+								/*var inBuff=aevt.inputBuffer;var outBuff=aevt.outputBuffer;
+        for(var chs=0;chs<outBuff.numberOfChannels;chs++){var bin=inBuff.getChannelData(chs);var out=outBuff.getChannelData(chs);
+          for(var s=0;s<bin.length;s++){out[s]=bin[s];}}*/
+						 		var d1=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(d1);
+								 //var max=Math.min.apply(null, d1);max=Math.abs(max);
+									var k=1/255;
+									for(var s=0;s<d1.length;s++){var v=0.003;v=d1[s]*k;if(d1[s]==0){v=0}if(v<0.7){v=0}frqgg[s].gain.value=v;console.log(v);}
+}
+//Load buttons
+//ooo.$$('buttA').onclick=function(){buttloader(this,'A','a.mp3');};
+	/*ooo.$$('buttB').onclick=function(){buttloader(this,'B','b.mp3');}
+ooo.$$('buttC').onclick=function(){buttloader(this,'C','c.mp3');};ooo.$$('buttW').onclick=function(){buttloader(this,'W','w.wav');}
+ooo.$$('buttLOG').onclick=function(){buttloader(this,'LOG','log.wav');};ooo.$$('buttLIN').onclick=function(){buttloader(this,'LIN','lin.wav');}
+ooo.$$('buttOM').onclick=function(){buttloader(this,'OM','om.mp3');}*/
+//SWITCH buffer
+	window.acx=new AudioContext();
+	window.usingmic=false;window.mic=null;
+function startvoice(micstream){
+		  window.ascript1=acx.createScriptProcessor(BUFFERSIZE,1,1);ascript1.onaudioprocess=processmic;
+				window.analyser=acx.createAnalyser();analyser.connect(ascript1);
+			analyser.smoothingTimeConstant=SMOOTHINGTIME;analyser.fftSize=FFTSIZE;
+				window.asplit=acx.createChannelSplitter();asplit.connect(analyser,0,0);
+				window.mic=acx.createMediaStreamSource(micstream);mic.connect(asplit);
+	   
+			 window.again=acx.createGain();again.gain.value=0.5;again.connect(acx.destination);
+	   window.avoice=acx.createBufferSource();avoice.buffer=selectedbuffer;
+	//avoice.connect(ascript2);
+			window.frqvv=[];window.frqgg=[];
+	   for(var v=0;v<FFTSIZE/2;v++){window.frqvv[v]=acx.createBiquadFilter();window.frqgg[v]=acx.createGain();
+	//window.ascript2=acx.createScriptProcessor(BUFFERSIZE,1,1);ascript2.onaudioprocess=processvoice;
+					frqvv[v].type="bandpass";
+					frqvv[v].frequency.value=((44100/(FFTSIZE/2))*v)+((44100/(FFTSIZE/2))/2);
+					frqvv[v].Q.value=1-(1/64);
+					avoice.connect(frqvv[v]);
+					frqgg[v].connect(again);
+					frqvv[v].connect(frqgg[v]);					
+				}
+				avoice.onended=function(){mic.disconnect(asplit);asplit.disconnect(analyser);
+					analyser.disconnect(ascript1);ascript1.disconnect(again);avoice.disconnect(ascript2);
+					again.disconnect(acx.destination);};
+	  ascript1.connect(acx.destination);avoice.start();
+}
+function startvoiceB(){
+	if(!usingmic){voiceB.innerHTML='STOP';usingmic=true;
+    navigator.webkitGetUserMedia({video:false,audio:true},function(micstream){
+    var code=document.getElementById('code').value;try{eval(code);startvoice(micstream);}catch(ex){alert(ex.message);}},function(){var i=0;});
+  }else{micing=false;voiceB.innerHTML='START';usingmic=false;
+    scriptNode.disconnect(audioCtx.destination);source.disconnect(splitter);splitter.disconnect(analyser);analyser.disconnect(scriptNode);
+  }
+}
+
+ </script></head><body><textarea style="width:100%;height:50px;" id="code">
+window.BUFFERSIZE=4096; // 44100=1000ms - An fft frame gets generated every BUFFERSIZE
+window.FFTSIZE=128;     // The number of frequancy channels for the output fft.
+window.SMOOTHINGTIME=0; // Supported only in native webaudio
+</textarea>
+<button id="buttW" onclick="buttloader(this,'WHITE SELECTED','c.mp3')">load white...</button><button id="voiceB" disabled="disabled">START</button>
+<script>		
+voiceB=document.getElementById('voiceB');voiceB.onclick=startvoiceB;
+</script></body></html>  

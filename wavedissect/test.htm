@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html><head><title>array buffer mix</title>
+<script src="una.js"></script>
+<script>
+function init(){window.una={};loaduna(una,window);window.sbuffer;window.sbuffer2;};
+var myX=0;
+function plotbuffer(num,dur){if(num){
+	var cir=document.createElementNS("http://www.w3.org/2000/svg",'circle');
+	cir.setAttribute('cy',''+((num+1)*100));
+	cir.setAttribute('cx',(myX));
+	cir.setAttribute('r','1');
+	cir.setAttribute('stroke','red');
+	cir.setAttribute('fill','red');
+	document.getElementById('waveform').appendChild(cir);
+	myX++;}
+};
+function clearPlot(dur){myX=0;var oo=document.getElementById('waveform');oo.parentNode.removeChild(oo);
+	var svgg=document.createElementNS("http://www.w3.org/2000/svg",'svg');
+	svgg.setAttribute('id','waveform');
+	svgg.setAttribute('height','300');
+	svgg.setAttribute('width',''+Math.round(44100*dur/1000)+'');
+	svgg.setAttribute('viewport','0 0 '+(44100*dur/1000)+' 200');
+	//svgg.setAttribute('preserveAspectRatio','xMaxYMax none');
+	document.getElementById('waveform-container').appendChild(svgg);
+	
+						}
+</script>
+<style>html,body{width:100%;height:100%;margin:0;}</style>
+</head><body onload="init()">
+    <input type="button" value="tooth" onclick="document.getElementById('jscode').value=una.toothbuffer;document.getElementById('jsargs').value='(2000,440,0.5,1,clearPlot,plotbuffer)';"/>
+    <input type="button" value="sine" onclick="document.getElementById('jscode').value=una.sinebuffer;document.getElementById('jsargs').value='(2000,440,0.5,1,clearPlot,plotbuffer)';"/>
+    <input type="button" value="white" onclick="document.getElementById('jscode').value=una.whitebuffer;document.getElementById('jsargs').value='(2000,1,0.5,clearPlot,plotbuffer)';"/>
+    <input type="button" value="pink" onclick="document.getElementById('jscode').value=una.pinkbuffer;document.getElementById('jsargs').value='(2000,1,0.5,clearPlot,plotbuffer)';"/>  
+    <input type="button" value="brown" onclick="document.getElementById('jscode').value=una.brownbuffer;document.getElementById('jsargs').value='(2000,1,0.5,clearPlot,plotbuffer)';"/>  
+    <input type="button" value="bezier" onclick="document.getElementById('jscode').value=una.bezierbuffer;document.getElementById('jsargs').value='(2000,440,0.5,1,   0.57,1,0.25,-0.1,0.32,-0.1,0.47,1,       clearPlot,plotbuffer)';"/>
+    <input id="jsargs" type="text" value="(1000,1,0.05)" style="width:300px;"/>
+	<input type="button" value="WEBAUDIO-PLAY (must always click this before binary save or play )" onclick="var cd='una.testbufferfn='+document.getElementById('jscode').value+';sbuffer=una.testbufferfn'+document.getElementById('jsargs').value+';una.playaudiobuffer(sbuffer);';try{eval(cd)}catch(ex){alert('error evaluating:\n'+cd+'\nError:\n'+ex.message)}"/>
+	<input type="button" value="PLAY" onclick="playWAV(encodeWAV(sbuffer));"/>
+	<input type="button" value="SAVE" onclick="saveWAV(encodeWAV(sbuffer));"/>
+    <br/>
+    <textarea id="jscode" style="width:99%;height:50%">
+function(dur,chs,db){if(!chs){chs=1}if(!dur){dur=1000}
+   clearPlot(dur);
+   var size=this.acx.sampleRate*(dur/1000);/*Quanti numeri? 44100 per il numero dei secondi.*/
+   var outout=this.acx.createBuffer(chs,size,this.acx.sampleRate);
+   for(var ch=0;ch<outout.numberOfChannels;ch++){
+     var out=outout.getChannelData(ch);
+     for(var i=0;i<out.length;i+=4){
+         out[i]=0;plotbuffer(out[i],dur);
+       out[i+1]=1*db;plotbuffer(out[i+1],dur);
+       out[i+2]=0;plotbuffer(out[i+2],dur);
+       out[i+3]=-1*db;plotbuffer(out[i+3],dur);
+    }
+  }return outout;}
+    </textarea>
+    <div id="waveform-container" style="width:100%;height:44%;background-color:#ccccff;overflow:scroll;">
+    <svg id="waveform"> </svg></div>
+</body></html>
+

@@ -1,0 +1,12 @@
+currentCulture='it-IT';
+function speak(text,pitch,rate,lang,onfinish) {
+var v=new SpeechSynthesisUtterance();
+    v.text=text;
+    if(lang){u.lang='it-IT';}else{u.lang=currentCulture;}
+    if(pitch){u.pitch=pitch;}
+    if(rate){u.rate=rate;}
+  u.onend=function () {if (onfinish) {onfinish();}};
+  u.onerror=function(err){if(onfinish){onfinish(err);}};
+  speechSynthesis.speak(u);
+}
+speak('o',2 ,1,function(){speak('o',2 ,1,function(){speak('e',2 ,1,function(){speak('o',2 ,1,function(){speak('o',2 ,1,function(){speak('i',2 ,1,function(){speak('o',2 ,1,function(){speak('o',2 ,1,function(){speak('e',2 ,1,function(){speak('o',2 ,1,function(){speak('o',2 ,1,function(){speak('u',2 ,1,function(){speak('o',2 ,1,function(){})})})})})})})})})})})})});

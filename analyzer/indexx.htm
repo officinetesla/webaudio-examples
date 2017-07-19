@@ -62,7 +62,7 @@ function update(d1,d2){//d1=FRQ,d2=TDOM
 		  corx3=corx3+(800/d1.length);corx4=corx4+(800/d1.length);
 //---------------------------------------------------------------------------------------------------------------------------------------//
 		  //GENERATE SVG PATH
-		  var top=((128-d2[s])+127);if(top==NaN){top=127}
+		  var top=((128-d2[s])+127);if(isNaN(top)){top=127}
 		  if(xxx%797===0){d+='M '+tempo+' '+top+' ';}else if(xxx%797!==0){d+='L '+tempo+' '+top+' ';};
 		  xxx+=0.0001;tempo=tempo+10;}
 		//Update MIC

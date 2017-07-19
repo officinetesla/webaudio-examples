@@ -62,7 +62,7 @@ function update(d1,d2){//d1=FRQ,d2=TDOM
 		  corx3=corx3+(800/d1.length);corx4=corx4+(800/d1.length);
 //---------------------------------------------------------------------------------------------------------------------------------------//
 		  //GENERATE SVG PATH
-		  var top=((128-d2[s])+127);
+		  var top=((128-d2[s])+127);if(top==NaN){top=127}
 		  if(xxx%797===0){d+='M '+tempo+' '+top+' ';}else if(xxx%797!==0){d+='L '+tempo+' '+top+' ';};
 		  xxx+=0.0001;tempo=tempo+10;}
 		//Update MIC
@@ -76,7 +76,7 @@ function update(d1,d2){//d1=FRQ,d2=TDOM
 			ooo.$$('slider').setAttribute('max',fftnum);
 			svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
 			var newElement = document.createElementNS("http://www.w3.org/2000/svg", 'path'); //Create a path in SVG's namespace
-			newElement.setAttribute('d',document.getElementById('onda').getAttribute('d')); //Set path's data
+			newElement.setAttribute('d',d); //Set path's data
 			svg.appendChild(newElement);
 			document.body.appendChild(svg);
 		  document.getElementById('svgg').setAttribute('viewBox','0 0 '+FFTSIZE*5+' 255');
